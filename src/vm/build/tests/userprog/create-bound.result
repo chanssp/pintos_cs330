@@ -1,0 +1,27 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (create-bound) begin
+  (create-bound) create("quux.dat"): 1
+  (create-bound) end
+  create-bound: exit(0)
+Differences in `diff -u' format:
+- (create-bound) begin
+- (create-bound) create("quux.dat"): 1
+- (create-bound) end
+- create-bound: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ success???
++ create-bound: exit(-1)

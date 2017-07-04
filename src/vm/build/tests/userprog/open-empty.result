@@ -1,0 +1,21 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (open-empty) begin
+  (open-empty) end
+  open-empty: exit(0)
+Differences in `diff -u' format:
+- (open-empty) begin
+- (open-empty) end
+- open-empty: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ open-empty: exit(-1)

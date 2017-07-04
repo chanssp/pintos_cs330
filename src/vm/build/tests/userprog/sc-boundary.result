@@ -1,0 +1,22 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (sc-boundary) begin
+  sc-boundary: exit(42)
+Differences in `diff -u' format:
+- (sc-boundary) begin
+- sc-boundary: exit(42)
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ success???
++ sc-boundary: exit(-1)

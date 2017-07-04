@@ -1,0 +1,27 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (open-boundary) begin
+  (open-boundary) open "sample.txt"
+  (open-boundary) end
+  open-boundary: exit(0)
+Differences in `diff -u' format:
+- (open-boundary) begin
+- (open-boundary) open "sample.txt"
+- (open-boundary) end
+- open-boundary: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ success???
++ open-boundary: exit(-1)

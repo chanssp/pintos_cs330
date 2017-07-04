@@ -1,0 +1,41 @@
+Copying tests/vm/mmap-overlap into /tmp/rD8BCQH6VP.dsk...
+Copying tests/vm/zeros into /tmp/rD8BCQH6VP.dsk...
+Writing command line to /tmp/AvOze9CaXk.dsk...
+qemu -hda /tmp/AvOze9CaXk.dsk -hdb /tmp/nMSLBF3ZX4.dsk -hdc /tmp/rD8BCQH6VP.dsk -hdd /tmp/TrvoJ6Y82z.dsk -m 4 -net none -nographic -monitor null
+Kernel command line: -q -f put mmap-overlap put zeros run mmap-overlap
+Pintos booting with 4,096 kB RAM...
+374 pages available in kernel pool.
+373 pages available in user pool.
+Calibrating timer...  78,540,800 loops/s.
+hd0:0: detected 145 sector (72 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:1: detected 4,032 sector (1 MB) disk, model "QEMU HARDDISK", serial "QM00002"
+hd1:0: detected 89 sector (44 kB) disk, model "QEMU HARDDISK", serial "QM00003"
+hd1:1: detected 8,064 sector (3 MB) disk, model "QEMU HARDDISK", serial "QM00004"
+Formatting file system...done.
+Boot complete.
+Putting 'mmap-overlap' into the file system...
+Putting 'zeros' into the file system...
+Executing 'mmap-overlap':
+load segment
+load segment
+load segment
+load segment
+load segment
+setup stk
+success???
+success???
+success???
+success???
+success???
+mmap-overlap: exit(-1)
+Execution of 'mmap-overlap' complete.
+Timer: 61 ticks
+Thread: 30 idle ticks, 30 kernel ticks, 1 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 113 reads, 188 writes
+hd1:0: 89 reads, 0 writes
+hd1:1: 0 reads, 0 writes
+Console: 1068 characters output
+Keyboard: 0 keys pressed
+Exception: 6 page faults
+Powering off...

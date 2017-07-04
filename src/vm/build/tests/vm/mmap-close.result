@@ -1,0 +1,26 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (mmap-close) begin
+  (mmap-close) open "sample.txt"
+  (mmap-close) mmap "sample.txt"
+  (mmap-close) end
+Differences in `diff -u' format:
+- (mmap-close) begin
+- (mmap-close) open "sample.txt"
+- (mmap-close) mmap "sample.txt"
+- (mmap-close) end
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ success???
+
+(Process exit codes are excluded for matching purposes.)

@@ -1,0 +1,18 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (create-null) begin
+  create-null: exit(-1)
+Differences in `diff -u' format:
+- (create-null) begin
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
+  create-null: exit(-1)

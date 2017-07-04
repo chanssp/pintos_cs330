@@ -1,0 +1,37 @@
+Copying tests/vm/mmap-read into /tmp/5C0xGgkr5Z.dsk...
+Copying ../../tests/vm/sample.txt into /tmp/5C0xGgkr5Z.dsk...
+Writing command line to /tmp/RM1VQYJP7X.dsk...
+qemu -hda /tmp/RM1VQYJP7X.dsk -hdb /tmp/5N9y26S4Kd.dsk -hdc /tmp/5C0xGgkr5Z.dsk -hdd /tmp/l874C27P48.dsk -m 4 -net none -nographic -monitor null
+Kernel command line: -q -f put mmap-read put sample.txt run mmap-read
+Pintos booting with 4,096 kB RAM...
+374 pages available in kernel pool.
+373 pages available in user pool.
+Calibrating timer...  78,540,800 loops/s.
+hd0:0: detected 145 sector (72 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:1: detected 4,032 sector (1 MB) disk, model "QEMU HARDDISK", serial "QM00002"
+hd1:0: detected 79 sector (39 kB) disk, model "QEMU HARDDISK", serial "QM00003"
+hd1:1: detected 8,064 sector (3 MB) disk, model "QEMU HARDDISK", serial "QM00004"
+Formatting file system...done.
+Boot complete.
+Putting 'mmap-read' into the file system...
+Putting 'sample.txt' into the file system...
+Executing 'mmap-read':
+load segment
+load segment
+load segment
+load segment
+load segment
+setup stk
+success???
+success???
+success???
+success???
+success???
+mmap-read: dying due to interrupt 0x06 (#UD Invalid Opcode Exception).
+Interrupt 0x06 (#UD Invalid Opcode Exception) at eip=0x8049fff
+ cr2=08049afd error=00000000
+ eax=00000000 ebx=000003e5 ecx=bfffff60 edx=0804bedc
+ esi=00000000 edi=bffffefc esp=bffffecc ebp=bfffff54
+ cs=001b ds=0023 es=0023 ss=0023
+
+TIMEOUT after 22 seconds of wall-clock time - load average: 1.30, 1.15, 1.05

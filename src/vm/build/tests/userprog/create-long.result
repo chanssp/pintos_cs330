@@ -1,0 +1,25 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (create-long) begin
+  (create-long) create("x..."): 0
+  (create-long) end
+  create-long: exit(0)
+Differences in `diff -u' format:
+- (create-long) begin
+- (create-long) create("x..."): 0
+- (create-long) end
+- create-long: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ success???
++ create-long: exit(-1)

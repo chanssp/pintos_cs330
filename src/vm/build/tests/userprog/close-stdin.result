@@ -1,0 +1,36 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (close-stdin) begin
+  (close-stdin) end
+  close-stdin: exit(0)
+Differences in `diff -u' format:
+- (close-stdin) begin
+- (close-stdin) end
+- close-stdin: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ close-stdin: exit(-1)
+Acceptable output:
+  (close-stdin) begin
+  close-stdin: exit(-1)
+Differences in `diff -u' format:
+- (close-stdin) begin
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
+  close-stdin: exit(-1)

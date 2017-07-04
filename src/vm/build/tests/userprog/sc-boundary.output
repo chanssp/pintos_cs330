@@ -1,0 +1,40 @@
+Copying tests/userprog/sc-boundary into /tmp/w6n7FqKCNK.dsk...
+Writing command line to /tmp/SRoSmiQvMT.dsk...
+qemu -hda /tmp/SRoSmiQvMT.dsk -hdb /tmp/Tjkhu1RkeR.dsk -hdc /tmp/w6n7FqKCNK.dsk -hdd /tmp/6aRRXKVcpE.dsk -m 4 -net none -nographic -monitor null
+Kernel command line: -q -f put sc-boundary run sc-boundary
+Pintos booting with 4,096 kB RAM...
+374 pages available in kernel pool.
+373 pages available in user pool.
+Calibrating timer...  78,540,800 loops/s.
+hd0:0: detected 145 sector (72 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:1: detected 4,032 sector (1 MB) disk, model "QEMU HARDDISK", serial "QM00002"
+hd1:0: detected 75 sector (37 kB) disk, model "QEMU HARDDISK", serial "QM00003"
+hd1:1: detected 8,064 sector (3 MB) disk, model "QEMU HARDDISK", serial "QM00004"
+Formatting file system...done.
+Boot complete.
+Putting 'sc-boundary' into the file system...
+Executing 'sc-boundary':
+load segment
+load segment
+load segment
+load segment
+load segment
+load segment
+setup stk
+success???
+success???
+success???
+success???
+success???
+sc-boundary: exit(-1)
+Execution of 'sc-boundary' complete.
+Timer: 61 ticks
+Thread: 30 idle ticks, 29 kernel ticks, 2 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 79 reads, 158 writes
+hd1:0: 75 reads, 0 writes
+hd1:1: 0 reads, 0 writes
+Console: 1024 characters output
+Keyboard: 0 keys pressed
+Exception: 6 page faults
+Powering off...

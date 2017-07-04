@@ -1,0 +1,41 @@
+Copying tests/vm/mmap-exit into /tmp/QAbz5NKg8Y.dsk...
+Copying tests/vm/child-mm-wrt into /tmp/QAbz5NKg8Y.dsk...
+Writing command line to /tmp/7RXn4UboRv.dsk...
+qemu -hda /tmp/7RXn4UboRv.dsk -hdb /tmp/xVbdgMWEYg.dsk -hdc /tmp/QAbz5NKg8Y.dsk -hdd /tmp/N4scU68Yz9.dsk -m 4 -net none -nographic -monitor null
+Kernel command line: -q -f put mmap-exit put child-mm-wrt run mmap-exit
+Pintos booting with 4,096 kB RAM...
+374 pages available in kernel pool.
+373 pages available in user pool.
+Calibrating timer...  78,540,800 loops/s.
+hd0:0: detected 145 sector (72 kB) disk, model "QEMU HARDDISK", serial "QM00001"
+hd0:1: detected 4,032 sector (1 MB) disk, model "QEMU HARDDISK", serial "QM00002"
+hd1:0: detected 150 sector (75 kB) disk, model "QEMU HARDDISK", serial "QM00003"
+hd1:1: detected 8,064 sector (3 MB) disk, model "QEMU HARDDISK", serial "QM00004"
+Formatting file system...done.
+Boot complete.
+Putting 'mmap-exit' into the file system...
+Putting 'child-mm-wrt' into the file system...
+Executing 'mmap-exit':
+load segment
+load segment
+load segment
+load segment
+load segment
+setup stk
+success???
+success???
+success???
+success???
+success???
+mmap-exit: exit(-1)
+Execution of 'mmap-exit' complete.
+Timer: 63 ticks
+Thread: 30 idle ticks, 31 kernel ticks, 2 user ticks
+hd0:0: 0 reads, 0 writes
+hd0:1: 113 reads, 310 writes
+hd1:0: 150 reads, 0 writes
+hd1:1: 0 reads, 0 writes
+Console: 1066 characters output
+Keyboard: 0 keys pressed
+Exception: 6 page faults
+Powering off...

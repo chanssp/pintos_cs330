@@ -1,0 +1,25 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (close-normal) begin
+  (close-normal) open "sample.txt"
+  (close-normal) close "sample.txt"
+  (close-normal) end
+  close-normal: exit(0)
+Differences in `diff -u' format:
+- (close-normal) begin
+- (close-normal) open "sample.txt"
+- (close-normal) close "sample.txt"
+- (close-normal) end
+- close-normal: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ close-normal: exit(-1)

@@ -1,0 +1,18 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (create-bad-ptr) begin
+  create-bad-ptr: exit(-1)
+Differences in `diff -u' format:
+- (create-bad-ptr) begin
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
+  create-bad-ptr: exit(-1)

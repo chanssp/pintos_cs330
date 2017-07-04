@@ -1,0 +1,23 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (read-zero) begin
+  (read-zero) open "sample.txt"
+  (read-zero) end
+  read-zero: exit(0)
+Differences in `diff -u' format:
+- (read-zero) begin
+- (read-zero) open "sample.txt"
+- (read-zero) end
+- read-zero: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ read-zero: exit(-1)

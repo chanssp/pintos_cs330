@@ -1,0 +1,24 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (mmap-misalign) begin
+  (mmap-misalign) open "sample.txt"
+  (mmap-misalign) try to mmap at misaligned address
+  (mmap-misalign) end
+Differences in `diff -u' format:
+- (mmap-misalign) begin
+- (mmap-misalign) open "sample.txt"
+- (mmap-misalign) try to mmap at misaligned address
+- (mmap-misalign) end
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
+
+(Process exit codes are excluded for matching purposes.)

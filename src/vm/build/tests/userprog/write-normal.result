@@ -1,0 +1,27 @@
+FAIL
+Test output failed to match any acceptable form.
+
+Acceptable output:
+  (write-normal) begin
+  (write-normal) create "test.txt"
+  (write-normal) open "test.txt"
+  (write-normal) end
+  write-normal: exit(0)
+Differences in `diff -u' format:
+- (write-normal) begin
+- (write-normal) create "test.txt"
+- (write-normal) open "test.txt"
+- (write-normal) end
+- write-normal: exit(0)
++ load segment
++ load segment
++ load segment
++ load segment
++ load segment
++ setup stk
++ success???
++ success???
++ success???
++ success???
++ success???
++ write-normal: exit(-1)
