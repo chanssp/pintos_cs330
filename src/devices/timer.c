@@ -44,7 +44,7 @@ static struct list sleep_list;  // 자고있는 thread 들이 모여있는 list
 void
 timer_init (void) 
 {
-  list_init (&sleep_list);
+  list_init (&sleep_list);  // 타이머를 사용하기 전에 list 를 생성해줘야함.
   /* 8254 input frequency divided by TIMER_FREQ, rounded to
      nearest. */
   uint16_t count = (1193180 + TIMER_FREQ / 2) / TIMER_FREQ;
@@ -110,18 +110,25 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
+  enum intr_level old_level = intr_disable();  // interrupt 를 막아줌으로 이 함수가 control을 가짐
+  
   if(ticks<0) return;
   int64_t start = timer_ticks ();   // 현재 시간을 가져옴움
   struct thread *cur = thread_current();  // 현재 thread
 
-  enum intr_level old_level = intr_disable();  // interrupt 를 막아줌으로 이 함수가 control을 가짐
+  //enum intr_level old_level = intr_disable();  // interrupt 를 막아줌으로 이 함수가 control을 가짐
 
   cur->tick_wake = start + ticks;   // 이 thread 가 일어나야 할 시간을 저장
-  list_insert_ordered(&sleep_list, &cur->elem, &tick_less_func, NULL);
+  list_insert_ordered(&sleep_list, &cur->elem, &tick_less_func, NULL);    // 마지막 두 argument 불확실
   thread_block();   // 현재 thread 를 재움
 
   intr_set_level (old_level);  // 다시 interrupt 를 깨움
 
+
+/* initially implemented code */
+//  ASSERT (intr_get_level () == INTR_ON);
+//  while (timer_elapsed (start) < ticks) 
+//    thread_yield ();
 }
 
 /* Suspends execution for approximately MS milliseconds. */

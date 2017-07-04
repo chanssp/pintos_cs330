@@ -37,6 +37,12 @@ static struct thread *initial_thread;
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
 
+
+//--------check--------
+//-----project 2-------
+
+
+
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame 
   {
@@ -250,7 +256,14 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
 
+  //
   list_insert_ordered(&ready_list, &t->elem, &compare_priority_func, NULL);
+  //정렬함수를 사용해서 넣는 방식을 이용.
+
+  //list_push_back (&ready_list, &t->elem);
+  //원래는 제일 뒤에 들어가는데 우선순위에 맞춰서 넣어줘야됨.
+
+
 
   t->status = THREAD_READY;
   intr_set_level (old_level);
@@ -331,7 +344,9 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (curr != idle_thread)
+  if (curr != idle_thread) 
+    //list_push_back (&ready_list, &curr->elem);
+    //원래는 그냥 뒤에 넣는데 이경우도 priority생각해서 sorting해주기.
     list_insert_ordered(&ready_list, &curr->elem, &compare_priority_func, NULL);
 
   curr->status = THREAD_READY;
@@ -354,15 +369,14 @@ thread_set_priority (int new_priority)
   old_level = intr_disable ();
   
   if (new_priority < cur->priority) {
-    if (cur->init_priority != -1) {    // donate 가 된 상황
+    if (cur->init_priority != -1) 
       cur->init_priority = new_priority;
-    }
     else {
       cur->priority = new_priority;
       thread_yield();
     }
   }
-
+  
   else
     thread_current()->priority = new_priority;
 
@@ -479,6 +493,10 @@ is_thread (struct thread *t)
 
 /* Does basic initialization of T as a blocked thread named
    NAME. */
+
+/*-------check-------*/
+/*----init thread----*/
+
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
@@ -496,6 +514,12 @@ init_thread (struct thread *t, const char *name, int priority)
 
   /*-----check-----*/
   list_init(&t->holding_locks); // list initialization
+  list_init(&t->child_list);
+  list_init(&t->file_list);
+  t->parent = running_thread();
+  sema_init(&t->wait_sema,0);
+
+  sema_init(&t->child_sema,0);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -584,9 +608,9 @@ schedule_tail (struct thread *prev)
 
 
 
-//check------------------------------------
-//--------------------schedule--------
-//----------------------------------
+//check——————————————————
+//——————————schedule————
+//—————————————————
 
 
 //schedule에서 next_thread_to_run을 그다음으로 돌아갈 스레드를 가르킨다.
@@ -620,12 +644,13 @@ allocate_tid (void)
   tid = next_tid++;
   lock_release (&tid_lock);
 
+  // printf(" allocated:%d,", tid);
+
   return tid;
 }
 
-
-/* ----------user defined functions---------- */
-/* ------------------------------------------ */
+/* —————user defined functions————— */
+/* ————————————————————— */
 bool 
 tick_less_func(struct list_elem *a, struct list_elem *b, void *aux UNUSED)
 {
@@ -642,9 +667,41 @@ compare_priority_func(struct list_elem *a, struct list_elem *b, void *aux UNUSED
   return c->priority > d->priority;
 }
 
-/* ------------------------------------------ */
+struct child_member *
+get_child_process (tid_t tid)
+{
+  struct thread *cur = thread_current();
+  struct list * children = &cur->parent->child_list;
+  struct list_elem * e;
 
+  for (e = list_begin (children); e != list_end(children); e = list_next(e))
+  {
+    if (tid == list_entry(e, struct child_member, child_elem)->child_tid) {
+      return list_entry(e, struct child_member, child_elem);
+    }
+  }
 
+  return NULL;
+}
+
+struct child_member *
+get_child_process_pre (tid_t tid)
+{
+  struct thread *cur = thread_current();
+  struct list * children = &cur->child_list;
+  struct list_elem * e;
+
+  for (e = list_begin (children); e != list_end(children); e = list_next(e))
+  {
+    if (tid == list_entry(e, struct child_member, child_elem)->child_tid) {
+      return list_entry(e, struct child_member, child_elem);
+    }
+  }
+
+  return NULL;
+}
+
+/* ————————————————————— */
 
 
 

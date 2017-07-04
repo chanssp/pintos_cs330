@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "threads/synch.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -107,7 +108,33 @@ struct thread
     int init_priority;          //donate일어나기전 원래 priority를 저장.
     struct list holding_locks;  //자기가 가지고있는 lock들의 list
     struct lock * wait_lock;    //현재 thread 가 요청을하고 회신을 기다리는 lock
+    //---check---
+    //project2 
+    struct thread * parent;   
+    bool success;
+    struct semaphore wait_sema;
+    
+    struct list child_list;
+    struct semaphore child_sema;
+    int waiting_for;
+    
+    struct list file_list;
+    struct file * running_file;
+  };
 
+struct child_member 
+  {
+    int child_tid;
+    int exit_status;
+    bool used;
+    struct list_elem child_elem;
+  };
+
+struct file_member
+  {
+    int fd;
+    struct file * file_ptr;
+    struct list_elem file_elem;
   };
 
 /* If false (default), use round-robin scheduler.
@@ -147,7 +174,11 @@ int thread_get_load_avg (void);
 
 /*---check---*/
 /*---추가함수--*/
+//project 1
 bool tick_less_func(struct list_elem *a, struct list_elem *b, void *aux);
 bool compare_priority_func(struct list_elem *a, struct list_elem *b, void *aux);
+struct child_member * get_child_process_pre (tid_t tid);
+//project 2
+struct child_member * get_child_process (tid_t tid);
 
 #endif /* threads/thread.h */

@@ -60,6 +60,7 @@ sema_init (struct semaphore *sema, unsigned value)
    sema_down function. */
 
 /*---------checkp sema down--------------*/
+//---------------------------------
 // 세마포어의 waiters 리스트에 넣을때 priority가 높은 순으로sorting되게 한다.
 
 void
@@ -72,10 +73,13 @@ sema_down (struct semaphore *sema)
 
   old_level = intr_disable ();
   while (sema->value == 0) 
-    {
-      list_insert_ordered(&sema->waiters, &thread_current()->elem, &compare_priority_func, NULL);
-      thread_block ();
-    }
+  {
+    list_push_back (&sema->waiters, &thread_current ()->elem);
+    //list_insert_ordered(&sema->waiters, &thread_current()->elem, &compare_priority_func, NULL);
+    //이줄만 추가
+    thread_block ();
+  }
+
   sema->value--;
   intr_set_level (old_level);
 }
@@ -132,11 +136,13 @@ sema_up (struct semaphore *sema)
     list_sort(&sema->waiters, &compare_priority_func, NULL);
     temp = list_entry (list_pop_front (&sema->waiters), struct thread, elem);
     thread_unblock (temp);
+    //thread_unblock(list_entry (list_pop_front (&sema->waiters), struct thread, elem));
   }
   sema->value++;
   intr_set_level (old_level);
 
-  if(cur->priority < temp->priority) thread_yield();
+  if(cur->priority < temp->priority) 
+    thread_yield();  // 인터럽트가 켜진 후 priority 높은 것에게 CPU양도
 }
 
 static void sema_test_helper (void *sema_);
@@ -229,7 +235,6 @@ lock_acquire (struct lock *lock)
 
   sema_down (&lock->semaphore);
   cur->wait_lock = NULL;
-
   list_push_back(&cur->holding_locks, &lock->list_elem);   // 이 thread 가 own 하고 있는 lock 리스트에 추가.
   lock->holder = cur;
   
@@ -247,16 +252,15 @@ donate_priority(struct lock * lock)
 
   /* 만약 lock->holder->priority 가 현재 lock 을 요청하는 thread->priority 보다 낮은경우 */
   if (owner->priority < cur->priority) {
-    if(owner->init_priority==-1) { // 아직 donation을 한번도 안받은 경우
+    if(owner->init_priority==-1){ // 아직 donation을 한번도 안받은 경우
       owner->init_priority = owner->priority;
     }
     owner->priority = cur->priority;  // "priority donation" 이 일어난다 
   }
 
-  if(owner->wait_lock != NULL) {   // nested cases
+  if(owner->wait_lock != NULL){   // nest
     donate_priority(owner->wait_lock);
   }
-
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -298,10 +302,11 @@ lock_release (struct lock *lock)
   list_remove(&lock->list_elem);  // thread 가 own 하고있던 lock 의 리스트에서 제거.
   
   priority_back(lock);
-  lock->holder = NULL;
+  //lock->holder = NULL;
   
   sema_up (&lock->semaphore);
   
+  lock->holder = NULL;
 }
 
 /*------check priority back------*/
@@ -312,21 +317,24 @@ priority_back(struct lock * lock)
   struct thread * owner = lock->holder;
   //struct list * holding_locks = owner->holding_locks;
   int max_lock;
-  struct list_elem * e;
+  //struct list_elem * e;
 
-  if(owner->init_priority == -1){   // donation 이 아예 일어나지 않은 경우
+  if(owner->init_priority == -1)   // donation 이 아예 일어나지 않은 경우
     return;
-  }
 
   else{
     /* 아직 hold하고 있는 다른 lock 이 쌓여 있는 경우 */
-    if(!list_empty(&owner->holding_locks)) {
+    if(!list_empty(&owner->holding_locks)){
       // 현재 owner 의 holding_locks 에서 가장 priority 가 큰 lock 을 찾는 과정
+      /*
       max_lock = list_entry(list_begin(&owner->holding_locks), struct lock, list_elem)->max_val;
       for(e = list_begin(&owner->holding_locks); e != list_end(&owner->holding_locks); e = list_next(e)) {
         if (max_lock < list_entry(e, struct lock, list_elem)->max_val)
           max_lock = list_entry(e, struct lock, list_elem)->max_val;
       }
+      */
+      max_lock = list_entry(list_max(&owner->holding_locks, &compare_priority_func, NULL), 
+                                      struct lock, list_elem)->max_val;
       owner->priority = max_lock;
     }
     /* 가지고 있던 모든 lock 을 realease 한 상태 */
@@ -442,6 +450,7 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock_held_by_current_thread (lock));
 
   if (!list_empty (&cond->waiters)) {
+    //check
     list_sort(&cond->waiters, &compare_sema_func, NULL);
     sema_up (&list_entry (list_pop_front (&cond->waiters),
                           struct semaphore_elem, elem)->semaphore);

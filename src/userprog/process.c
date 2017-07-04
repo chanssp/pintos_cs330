@@ -17,20 +17,35 @@
 #include "threads/palloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
+#include "threads/thread.h"
+#include "threads/malloc.h"
+#include "threads/synch.h"
+#include "userprog/syscall.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
+static int argument_count(char * s);
+static void argument_parsing(char *s, int argc,void ** esp);
+
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
-   before process_execute() returns.  Returns the new process's
-   thread id, or TID_ERROR if the thread cannot be created. */
+   before process_execute() */
+
+/*----------check----------*/
+/*-----process execute-----*/
+
 tid_t
 process_execute (const char *file_name) 
-{
+{ 
   char *fn_copy;
   tid_t tid;
+  char *save_ptr, *name, *temp;
+  struct child_member * child;
 
+  temp = (char *)malloc(sizeof(char)*(strlen(file_name)+1));
+  strlcpy(temp,file_name,strlen(file_name)+3);
+  
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);
@@ -38,12 +53,110 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  name = strtok_r(temp, " ", &save_ptr);
+
+  // printf("<EXECUTING:%d>" , thread_current()->tid);
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-  if (tid == TID_ERROR)
-    palloc_free_page (fn_copy); 
+  tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy); // start process 를 부름
+
+  if (tid == TID_ERROR) {
+    palloc_free_page (fn_copy);
+    return tid;
+  }
+
+  child  = (struct child_member *) malloc(sizeof(struct child_member));
+  if (child != NULL) 
+  {
+    child->child_tid = tid;
+    child->used = false;
+
+    // printf(" push%d," , child->child_tid);
+    list_push_back (&thread_current()->child_list, &child->child_elem);
+  }
+  // printf("<SEMA DOWN:%d>" , thread_current()->tid);
+  sema_down(&thread_current()->child_sema);
+
+  if (!thread_current()->success)
+    // printf("asdf");
+    return -1;
+
+  // printf("<EXEC-FIN:%d>" , thread_current()->tid);
+  // printf("tid:%d", tid);
   return tid;
+
 }
+
+/*-------------check--------------*/
+/*-----user defined functions-----*/
+
+static int 
+argument_count(char * s)
+{
+  int count=0;
+  char *token, *save_ptr;
+
+  for (token = strtok_r (s, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+    count++;
+  }
+  return count;
+}
+
+static void 
+argument_parsing(char *s, int32_t argc,void ** esp)
+{
+  int ** argv = (int**) malloc(sizeof(int *)* (argc + 1)); // + 1 은 null pointer을 위해. ##type 다시 생각해보기
+  char *token, *save_ptr;
+  int i, len;
+  int sum_len = 0;
+  int reval = 0;
+  int argin = 0;
+  
+
+  for (token = strtok_r (s, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) 
+  {
+    len = strlen(token) + 1;   // token 의 길이 + '\0' escape sequence
+    sum_len += len;
+    *esp-=len;
+    argv[argin]=*esp;
+    argin++;
+    memcpy(*esp, token, len);
+  }
+  //null pointer 넣어주기
+  *esp-=4;
+  argv[argc]=*esp;
+  memcpy(*esp,&reval,sizeof(char*));
+
+  // word-align 맞춰주기
+  if (sum_len%4)
+    *esp -= 4-(sum_len%4);
+  
+  // argv[i] 순서대로 넣어주기 (역순)
+  for (i = argc-1; i >= 0; i--)
+  { 
+    *esp -= 4;
+    memcpy(*esp, &argv[i], sizeof(char *));
+  } 
+
+  // argv 넣어주기
+  int* temp4 =*esp;
+  *esp -= 4;
+  memcpy(*esp, &temp4, sizeof(char **));
+
+  // argc 넣어주기
+  *esp -= 4;
+  memcpy(*esp, &argc, sizeof(int32_t));
+
+  // return address 넣어주기
+  *esp -= 4;
+  memcpy(*esp, &reval, sizeof(void *));
+
+  free(argv);
+
+  //hex_dump((uintptr_t) (PHYS_BASE - 100), (void **) (PHYS_BASE - 100), 100, true);
+
+}
+
 
 /* A thread function that loads a user process and makes it start
    running. */
@@ -51,29 +164,61 @@ static void
 start_process (void *f_name)
 {
   char *file_name = f_name;
+  char *temp = (char *)malloc(sizeof(char)*(strlen(f_name)+1));
+  strlcpy(temp,f_name,strlen(f_name)+3);
+  char *temp2 = (char *)malloc(sizeof(char)*(strlen(f_name)+1));
+  strlcpy(temp2,f_name,strlen(f_name)+3);
+
   struct intr_frame if_;
   bool success;
+  // project 2
+  int argc;
+
+  // printf("<STARTING:%d>", thread_current()->tid); 
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  char * save_ptr;
+  strtok_r (f_name, " ", 
+    &save_ptr);
+  success = load (f_name, &if_.eip, &if_.esp);
+ 
+  if(success)
+  {
+    argc = argument_count(temp);
+    argument_parsing(temp2, argc,&if_.esp);
+    thread_current()->parent->success=true;
+    // printf("<SEMA UP(s):%d>", thread_current()->parent->tid);
+    sema_up(&thread_current()->parent->child_sema);
+  }
 
+  free(temp);
+  free(temp2);
+  
   /* If load failed, quit. */
   palloc_free_page (file_name);
+
   if (!success) 
+  {
+    thread_current()->parent->success=false;
+    // printf("<SEMA UP(!s):%d>", thread_current()->parent->tid);
+    sema_up(&thread_current()->parent->child_sema);
     thread_exit ();
+  }
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
-     threads/intr-stubs.S).  Because intr_exit takes all of its
+     thread
+     s/intr-stubs.S).  Because intr_exit takes all of its
      arguments on the stack in the form of a `struct intr_frame',
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
+  
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
@@ -85,13 +230,56 @@ start_process (void *f_name)
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
+
+/*------------check-------------*/
+/*---------process wait---------*/
 int
 process_wait (tid_t child_tid UNUSED) 
 {
-  return -1;
+  int status;
+  struct thread *cur = thread_current();
+  struct child_member * child;
+
+  // printf("<WAITING:%d>", cur->tid);
+
+  // printf("<PROCESS_WAIT:%d>", child_tid);
+  child = get_child_process_pre(child_tid);
+  // printf(" called by %d, in wait, ", cur->tid);
+
+  if (child==NULL){
+    return -1;
+  }
+
+  cur->waiting_for = child->child_tid;
+  // printf("<cur:%d waiting for: %d>", cur->tid, child_tid);
+
+  if(child->used)
+  {
+    // printf(" removed%d");
+    list_remove(&child->child_elem);
+    status = child->exit_status;
+    free(child);
+  }
+
+  // child 가 아직 다 안끝남
+  if (!(child->used))
+  {
+    // printf("<SEMA DOWN:%d>" , thread_current()->tid);
+    sema_down(&cur->wait_sema);
+    // printf(" removed%d");
+    list_remove(&child->child_elem);
+    status = child->exit_status;
+    free(child);
+  }
+
+  // printf("<WAIT-FIN:%d>", cur->tid);
+  return status;
 }
 
 /* Free the current process's resources. */
+
+/*------------check-------------*/
+/*---------process exit---------*/
 void
 process_exit (void)
 {
@@ -114,6 +302,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
 }
 
 /* Sets up the CPU for running user code in the current
@@ -205,6 +394,10 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    Stores the executable's entry point into *EIP
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
+
+/*--------check load----------*/
+/*----------------------------*/
+
 bool
 load (const char *file_name, void (**eip) (void), void **esp) 
 {
@@ -311,8 +504,13 @@ load (const char *file_name, void (**eip) (void), void **esp)
   success = true;
 
  done:
+  if (success) {
+    file_deny_write(file);
+    t->running_file = file;
+  }
+  else
+    file_close (file);
   /* We arrive here whether the load is successful or not. */
-  file_close (file);
   return success;
 }
 
@@ -426,6 +624,10 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
+
+/*--------check--------*/
+/*-----setup stack-----*/
+
 static bool
 setup_stack (void **esp) 
 {
