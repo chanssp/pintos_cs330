@@ -4,6 +4,12 @@
 #include "userprog/gdt.h"
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "userprog/syscall.h"
+#include "threads/vaddr.h"
+#include "vm/page.h"
+#include "vm/frame.h"
+#include <list.h>
+
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -119,6 +125,10 @@ kill (struct intr_frame *f)
    can find more information about both of these in the
    description of "Interrupt 14--Page Fault Exception (#PF)" in
    [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
+
+/*----------check----------*/
+/*--------page fault-------*/
+
 static void
 page_fault (struct intr_frame *f) 
 {
@@ -126,6 +136,9 @@ page_fault (struct intr_frame *f)
   bool write;        /* True: access was write, false: access was read. */
   bool user;         /* True: access by user, false: access by kernel. */
   void *fault_addr;  /* Fault address. */
+
+  /*--------variables for project 3--------*/
+  struct spt_entry * spte;
 
   /* Obtain faulting address, the virtual address that was
      accessed to cause the fault.  It may point to code or to
@@ -148,16 +161,38 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  is_valid_pointer(f);
+  // printf ("FAULT ADDR: 0x%08x\n", fault_addr);
+
+  if (is_user_vaddr(fault_addr) && (fault_addr != NULL) && not_present) 
+  {
+    spte = page_lookup (pg_round_down (fault_addr));
+
+    // false: spt 에는 존재하나 physical memory 에 존재하지 않음.
+    if (spte != NULL && !spte->valid) {
+      // printf ("success???\n");
+      load_page(spte);
+    }
+
+    else if (spte ==NULL&&(f->esp - 32 <= fault_addr)&&((((uint8_t *) PHYS_BASE)-((uint8_t *)f->esp))<=(1<<23))){
+      stack_growth (pg_round_down (fault_addr));
+    }
+    else{
+       is_valid_pointer(f);
+     }
+  }
   
-  /* To implement virtual memory, delete the rest of the function
+
+  else {
+    
+    is_valid_pointer(f);
+    /* To implement virtual memory, delete the rest of the function
      body, and replace it with code that brings in the page to
      which fault_addr refers. */
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-          user ? "user" : "kernel");
-  kill (f);
+    /*printf ("Page fault at %p: %s error %s page in %s context.\n",
+            fault_addr,
+            not_present ? "not present" : "rights violation",
+            write ? "writing" : "reading",
+            user ? "user" : "kernel");
+    kill (f);*/
+  }
 }
-

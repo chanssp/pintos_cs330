@@ -4,7 +4,11 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include <hash.h>
 #include "threads/synch.h"
+
+// project 3----check----
+typedef int mapid_t;
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -120,6 +124,10 @@ struct thread
     
     struct list file_list;
     struct file * running_file;
+
+    //project 3
+    struct hash supp_page_table;
+    struct list mmap_list;
   };
 
 struct child_member 
@@ -136,6 +144,17 @@ struct file_member
     struct file * file_ptr;
     struct list_elem file_elem;
   };
+
+struct mmap_member
+  {
+    mapid_t mapid;
+    void * map_addr;
+    struct spt_entry * spte;
+    struct file * file_ptr;
+    struct list_elem mmap_elem;
+  };
+
+
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -177,8 +196,8 @@ int thread_get_load_avg (void);
 //project 1
 bool tick_less_func(struct list_elem *a, struct list_elem *b, void *aux);
 bool compare_priority_func(struct list_elem *a, struct list_elem *b, void *aux);
-struct child_member * get_child_process_pre (tid_t tid);
+struct child_member * get_child_from_self (tid_t tid);
 //project 2
-struct child_member * get_child_process (tid_t tid);
+struct child_member * find_self_from_parent (tid_t tid);
 
 #endif /* threads/thread.h */

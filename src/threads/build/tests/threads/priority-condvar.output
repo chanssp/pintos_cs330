@@ -1,4 +1,4 @@
-Writing command line to /tmp/oYNkk0ai0t.dsk...
+Writing command line to /tmp/Htq43ZKtoa.dsk...
 warning: can't find squish-pty, so terminal input will fail
 bochs -q
 Kernel command line: -q run priority-condvar
@@ -10,25 +10,39 @@ Boot complete.
 Executing 'priority-condvar':
 (priority-condvar) begin
 (priority-condvar) Thread priority 23 starting.
+(priority-condvar) Thread priority 22 starting.
 (priority-condvar) Thread priority 21 starting.
 (priority-condvar) Thread priority 30 starting.
 (priority-condvar) Thread priority 29 starting.
+(priority-condvar) Thread priority 28 starting.
 (priority-condvar) Thread priority 27 starting.
 (priority-condvar) Thread priority 26 starting.
+(priority-condvar) Thread priority 25 starting.
+(priority-condvar) Thread priority 24 starting.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 30 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 29 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 28 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 27 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 26 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 25 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 24 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 23 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 22 woke up.
 (priority-condvar) Signaling...
+(priority-condvar) Thread priority 21 woke up.
 (priority-condvar) end
 Execution of 'priority-condvar' complete.
-Timer: 164 ticks
-Thread: 0 idle ticks, 168 kernel ticks, 0 user ticks
-Console: 1003 characters output
+Timer: 273 ticks
+Thread: 0 idle ticks, 276 kernel ticks, 0 user ticks
+Console: 1665 characters output
 Keyboard: 0 keys pressed
 Powering off...

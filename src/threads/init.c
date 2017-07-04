@@ -114,6 +114,10 @@ main (void)
   disk_init ();
   filesys_init (format_filesys);
 #endif
+  
+  /*-----check---project 3---*/
+  swap_init();
+
 
   printf ("Boot complete.\n");
   

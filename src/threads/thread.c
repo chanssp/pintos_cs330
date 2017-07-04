@@ -11,9 +11,13 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "vm/frame.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
+#include <hash.h>
+#include "vm/page.h"
+#include "userprog/syscall.h"
 
 /* Random value for struct thread's `magic' member.
    Used to detect stack overflow.  See the big comment at the top
@@ -103,6 +107,13 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+
+  lock_init(&frame_lock);
+  lock_init(&frame_lock3);
+  list_init (&frame_table);
+  lock_init(&file_lock);
+
+  
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -369,14 +380,15 @@ thread_set_priority (int new_priority)
   old_level = intr_disable ();
   
   if (new_priority < cur->priority) {
-    if (cur->init_priority != -1) 
+    if (cur->init_priority != -1)    // donate 가 된 상황
       cur->init_priority = new_priority;
     else {
       cur->priority = new_priority;
       thread_yield();
     }
   }
-  
+  // yield 를 해줄 필요가 없음. 이미 자신 priority 가 가장 높은 경우이기 때문.
+  // current thread 라는 말이 이미 우선순위가 가장 높다는 의미.
   else
     thread_current()->priority = new_priority;
 
@@ -516,10 +528,17 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->holding_locks); // list initialization
   list_init(&t->child_list);
   list_init(&t->file_list);
+  list_init(&t->mmap_list);
   t->parent = running_thread();
   sema_init(&t->wait_sema,0);
 
   sema_init(&t->child_sema,0);
+  
+
+
+  /*-----project 3-----*/
+
+  //lock_init (&page_lock);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -668,36 +687,38 @@ compare_priority_func(struct list_elem *a, struct list_elem *b, void *aux UNUSED
 }
 
 struct child_member *
-get_child_process (tid_t tid)
+find_self_from_parent (tid_t tid)
 {
   struct thread *cur = thread_current();
   struct list * children = &cur->parent->child_list;
   struct list_elem * e;
-
+  // printf(" child list of %d" , cur->parent->tid);
   for (e = list_begin (children); e != list_end(children); e = list_next(e))
   {
     if (tid == list_entry(e, struct child_member, child_elem)->child_tid) {
+      // printf("<FOUND:%d>", list_entry(e, struct child_member, child_elem)->child_tid);
       return list_entry(e, struct child_member, child_elem);
     }
   }
-
+  // printf("<NO CHILD MEMBER:%d>" , tid);
   return NULL;
 }
 
 struct child_member *
-get_child_process_pre (tid_t tid)
+get_child_from_self (tid_t tid)
 {
   struct thread *cur = thread_current();
   struct list * children = &cur->child_list;
   struct list_elem * e;
-
+  // printf(" child list of %d" , cur->tid);
   for (e = list_begin (children); e != list_end(children); e = list_next(e))
   {
     if (tid == list_entry(e, struct child_member, child_elem)->child_tid) {
+      // printf("<FOUND:%d>", list_entry(e, struct child_member, child_elem)->child_tid);
       return list_entry(e, struct child_member, child_elem);
     }
   }
-
+  // printf("<NO CHILD MEMBER:%d>" , tid);
   return NULL;
 }
 

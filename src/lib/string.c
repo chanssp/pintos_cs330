@@ -54,7 +54,7 @@ memcmp (const void *a_, const void *b_, size_t size)
 {
   const unsigned char *a = a_;
   const unsigned char *b = b_;
-
+  // printf("<<memcmp endter>>\n");
   ASSERT (a != NULL || size == 0);
   ASSERT (b != NULL || size == 0);
 
@@ -293,7 +293,7 @@ size_t
 strlen (const char *string) 
 {
   const char *p;
-
+  // printf("<<strlen enter>>\n");
   ASSERT (string != NULL);
 
   for (p = string; *p != '\0'; p++)

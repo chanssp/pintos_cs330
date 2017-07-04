@@ -129,7 +129,7 @@ sema_up (struct semaphore *sema)
   ASSERT (sema != NULL);
 
   old_level = intr_disable ();
-
+ 
   if (!list_empty (&sema->waiters)) {
     // check donate sema 에서 필요함. waiters 에 집어 넣을 때 순서대로 집어 넣었지만
     // 그 후에 리스트 안에서 priority 가 바뀌는 경우가 있기 때문에 꺼내기 전에 대시 재정렬.
@@ -303,7 +303,6 @@ lock_release (struct lock *lock)
   
   priority_back(lock);
   //lock->holder = NULL;
-  
   sema_up (&lock->semaphore);
   
   lock->holder = NULL;

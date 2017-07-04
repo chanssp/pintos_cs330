@@ -62,7 +62,6 @@ lookup_page (uint32_t *pd, const void *vaddr, bool create)
 
   /* Shouldn't create new kernel virtual mappings. */
   ASSERT (!create || is_user_vaddr (vaddr));
-
   /* Check for a page table for VADDR.
      If one is missing, create one if requested. */
   pde = pd + pd_no (vaddr);
@@ -192,7 +191,9 @@ pagedir_set_dirty (uint32_t *pd, const void *vpage, bool dirty)
 bool
 pagedir_is_accessed (uint32_t *pd, const void *vpage) 
 {
+  // printf("<<pass70>>\n");
   uint32_t *pte = lookup_page (pd, vpage, false);
+  // printf("<<pass71>>\n");
   return pte != NULL && (*pte & PTE_A) != 0;
 }
 

@@ -21,11 +21,14 @@
 #include "threads/malloc.h"
 #include "threads/synch.h"
 #include "userprog/syscall.h"
+#include "vm/frame.h"
+#include "vm/page.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 static int argument_count(char * s);
 static void argument_parsing(char *s, int argc,void ** esp);
+
 
 
 /* Starts a new thread running a user program loaded from
@@ -45,17 +48,19 @@ process_execute (const char *file_name)
 
   temp = (char *)malloc(sizeof(char)*(strlen(file_name)+1));
   strlcpy(temp,file_name,strlen(file_name)+3);
-  
+
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
-  fn_copy = palloc_get_page (0);
-  if (fn_copy == NULL)
+  fn_copy = palloc_get_page (0); 
+  if (fn_copy == NULL) {
     return TID_ERROR;
+  }
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  // 이름을 넣어줘야함.
   name = strtok_r(temp, " ", &save_ptr);
 
-  // printf("<EXECUTING:%d>" , thread_current()->tid);
+  // printf("<EXECUTING:%d>\n" , thread_current()->tid);
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy); // start process 를 부름
@@ -70,7 +75,6 @@ process_execute (const char *file_name)
   {
     child->child_tid = tid;
     child->used = false;
-
     // printf(" push%d," , child->child_tid);
     list_push_back (&thread_current()->child_list, &child->child_elem);
   }
@@ -78,10 +82,9 @@ process_execute (const char *file_name)
   sema_down(&thread_current()->child_sema);
 
   if (!thread_current()->success)
-    // printf("asdf");
     return -1;
 
-  // printf("<EXEC-FIN:%d>" , thread_current()->tid);
+  // printf("<EXEC-FIN:%d>\n" , thread_current()->tid);
   // printf("tid:%d", tid);
   return tid;
 
@@ -109,7 +112,7 @@ argument_parsing(char *s, int32_t argc,void ** esp)
   char *token, *save_ptr;
   int i, len;
   int sum_len = 0;
-  int reval = 0;
+  int ret_add = 0;  // also used for null pointer
   int argin = 0;
   
 
@@ -125,7 +128,7 @@ argument_parsing(char *s, int32_t argc,void ** esp)
   //null pointer 넣어주기
   *esp-=4;
   argv[argc]=*esp;
-  memcpy(*esp,&reval,sizeof(char*));
+  memcpy(*esp,&ret_add,sizeof(char*));
 
   // word-align 맞춰주기
   if (sum_len%4)
@@ -149,7 +152,7 @@ argument_parsing(char *s, int32_t argc,void ** esp)
 
   // return address 넣어주기
   *esp -= 4;
-  memcpy(*esp, &reval, sizeof(void *));
+  memcpy(*esp, &ret_add, sizeof(void *));
 
   free(argv);
 
@@ -169,12 +172,14 @@ start_process (void *f_name)
   char *temp2 = (char *)malloc(sizeof(char)*(strlen(f_name)+1));
   strlcpy(temp2,f_name,strlen(f_name)+3);
 
+  // printf ("START PROCESS\n");
+
   struct intr_frame if_;
   bool success;
   // project 2
   int argc;
 
-  // printf("<STARTING:%d>", thread_current()->tid); 
+  hash_init (&thread_current()->supp_page_table, page_hash, page_less, NULL);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -182,10 +187,10 @@ start_process (void *f_name)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   char * save_ptr;
-  strtok_r (f_name, " ", 
-    &save_ptr);
+  strtok_r (f_name, " ",  &save_ptr);
+
   success = load (f_name, &if_.eip, &if_.esp);
- 
+
   if(success)
   {
     argc = argument_count(temp);
@@ -197,7 +202,7 @@ start_process (void *f_name)
 
   free(temp);
   free(temp2);
-  
+
   /* If load failed, quit. */
   palloc_free_page (file_name);
 
@@ -209,6 +214,9 @@ start_process (void *f_name)
     thread_exit ();
   }
 
+  // printf ("START PROCESS END\n");
+  // printf("<<pass91-3>>\n");
+  // printf("<<esp : 0x%08x>>\n",if_.esp);
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      thread
@@ -218,7 +226,7 @@ start_process (void *f_name)
      and jump to it. */
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
-  
+  // printf("<<pass92>>\n");
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
@@ -243,7 +251,7 @@ process_wait (tid_t child_tid UNUSED)
   // printf("<WAITING:%d>", cur->tid);
 
   // printf("<PROCESS_WAIT:%d>", child_tid);
-  child = get_child_process_pre(child_tid);
+  child = get_child_from_self(child_tid);
   // printf(" called by %d, in wait, ", cur->tid);
 
   if (child==NULL){
@@ -302,7 +310,6 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
-
 }
 
 /* Sets up the CPU for running user code in the current
@@ -407,7 +414,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   off_t file_ofs;
   bool success = false;
   int i;
-
+  // printf("<<pass30>>\n");
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
@@ -493,11 +500,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
           break;
         }
     }
-
+    // printf("<<pass100, esp : 0x%08x>>\n",esp);
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
-
+  // printf("<<pass101>>\n");
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
@@ -505,12 +512,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   if (success) {
+    // printf("<<pass103-0>>\n");
     file_deny_write(file);
     t->running_file = file;
   }
-  else
-    file_close (file);
+  else{
+    // printf("<<pass103-1>>\n");
+    file_close (file);}
   /* We arrive here whether the load is successful or not. */
+    // printf("<<pass103-2>>\n");
   return success;
 }
 
@@ -581,6 +591,8 @@ static bool
 load_segment (struct file *file, off_t ofs, uint8_t *upage,
               uint32_t read_bytes, uint32_t zero_bytes, bool writable) 
 {
+  bool insert_success;
+
   ASSERT ((read_bytes + zero_bytes) % PGSIZE == 0);
   ASSERT (pg_ofs (upage) == 0);
   ASSERT (ofs % PGSIZE == 0);
@@ -594,55 +606,83 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
+      /*---로딩을 위한 함수 (project 3)---*/
+      struct spt_entry * spte;  // 만약 이 선언이 while loop 밖에 있다면...?
+      spte = (struct spt_entry *) malloc (sizeof(struct spt_entry));
+      // initialize the spt_entry
+      spte = initialize_file_spte (spte, file, ofs, upage, read_bytes, zero_bytes, writable);
+      insert_success = insert_into_spt(spte);
+
       /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
+      // uint8_t *kpage = palloc_get_page (PAL_USER);  
+      uint8_t *kpage = allocate_frame (spte, PAL_USER);
+
+      if (kpage == NULL){
         return false;
+      }
 
       /* Load this page. */
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
         {
-          palloc_free_page (kpage);
+          remove_frame (kpage);
           return false; 
         }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
 
+      memset (kpage + page_read_bytes, 0, page_zero_bytes); // 나머지 공간을 0 으로 채움
       /* Add the page to the process's address space. */
       if (!install_page (upage, kpage, writable)) 
         {
-          palloc_free_page (kpage);
+          //palloc_free_page (kpage);
+          remove_frame (kpage);
+          
           return false; 
         }
 
+      spte->valid = true;
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
       upage += PGSIZE;
     }
+
+    // 이 while loop 은 파일을 끝까지 (read_bytes == 0) 읽을 때 까지
+    // virtual memory 에서 physical memory 로 load 해준다. 
   return true;
 }
 
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 
-/*--------check--------*/
-/*-----setup stack-----*/
-
 static bool
 setup_stack (void **esp) 
 {
   uint8_t *kpage;
   bool success = false;
+  bool insert_success;
 
-  kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  // stack 의 정보도 physical memory 에 옮겨주기.
+  struct spt_entry * spte;
+  spte = (struct spt_entry *) malloc (sizeof(struct spt_entry));
+ 
+
+  // kpage = palloc_get_page (PAL_USER | PAL_ZERO);
+  kpage = allocate_frame (spte, PAL_USER | PAL_ZERO);
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
-      if (success)
+      if (success) 
         *esp = PHYS_BASE;
-      else
-        palloc_free_page (kpage);
+      else 
+        remove_frame (kpage);
+
     }
+
+  spte->v_address = *esp;
+  spte->type = 1;    // file type
+  spte->valid = false;
+  insert_success = insert_into_spt(spte);
+  spte->valid = true;
+
   return success;
 }
 
