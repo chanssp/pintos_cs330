@@ -99,12 +99,24 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    /* ---user defined variable--- */
+    uint64_t tick_wake;   //이 시간이 되면 thread 를 깨운다
+    
+    // lock 구현을 위해 쓰이는 변수들
+    int init_priority;          //donate일어나기전 원래 priority를 저장.
+    struct list holding_locks;  //자기가 가지고있는 lock들의 list
+    struct lock * wait_lock;    //현재 thread 가 요청을하고 회신을 기다리는 lock
+
   };
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
+/* user defined function to send the sleep_list */
+//struct list *pass_sleep_list(void);
 
 void thread_init (void);
 void thread_start (void);
@@ -132,5 +144,10 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+/*---check---*/
+/*---추가함수--*/
+bool tick_less_func(struct list_elem *a, struct list_elem *b, void *aux);
+bool compare_priority_func(struct list_elem *a, struct list_elem *b, void *aux);
 
 #endif /* threads/thread.h */

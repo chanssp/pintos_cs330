@@ -22,6 +22,8 @@ struct lock
   {
     struct thread *holder;      /* Thread holding lock (for debugging). */
     struct semaphore semaphore; /* Binary semaphore controlling access. */
+    struct list_elem list_elem;    // 리스트에 넣기위해 필요한 변수
+    int max_val;   // 이 lock 을 요청한 thread 중 가장 높은 priority 값
   };
 
 void lock_init (struct lock *);
@@ -30,11 +32,20 @@ bool lock_try_acquire (struct lock *);
 void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
 
+/*-------check-------*/
+/*---user defined functiosn for lock---*/
+void donate_priority(struct lock * lock);
+void priority_back(struct lock * lock);
+/*-------------------------------------*/
+
 /* Condition variable. */
 struct condition 
   {
     struct list waiters;        /* List of waiting threads. */
   };
+
+//check
+bool compare_sema_func(struct list_elem *a, struct list_elem *b, void *aux);
 
 void cond_init (struct condition *);
 void cond_wait (struct condition *, struct lock *);

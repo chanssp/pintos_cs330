@@ -161,6 +161,15 @@ thread_print_stats (void)
    The code provided sets the new thread's `priority' member to
    PRIORITY, but no actual priority scheduling is implemented.
    Priority scheduling is the goal of Problem 1-3. */
+
+
+//check - thread create----------
+//------------------------------
+//thread가 생겨날때 priority가 현재 실행중인 쓰레드보다 높다면 바로실행
+//아니면 readylist에 순서에 맞게 넣어준다.
+//마지막에 얘가 높은지안높은지 점검해서 실행해줘야되므로 마지막 추가해줫다.
+
+
 tid_t
 thread_create (const char *name, int priority,
                thread_func *function, void *aux) 
@@ -198,7 +207,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
+  if(thread_current()->priority < priority) thread_yield();//이거넣음
   return tid;
 }
 
@@ -226,6 +235,11 @@ thread_block (void)
    be important: if the caller had disabled interrupts itself,
    it may expect that it can atomically unblock a thread and
    update other data. */
+
+
+/*----------check----------*/
+/*-----thread unblock------*/
+
 void
 thread_unblock (struct thread *t) 
 {
@@ -235,7 +249,9 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+
+  list_insert_ordered(&ready_list, &t->elem, &compare_priority_func, NULL);
+
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -294,6 +310,18 @@ thread_exit (void)
 
 /* Yields the CPU.  The current thread is not put to sleep and
    may be scheduled again immediately at the scheduler's whim. */
+
+
+/*-----------------check-----------------*/
+/*---------------------------------------*/
+/*--------thread yield-------------------*/
+//여기서 원래 schedule() is responsible for switching threads. 
+//It is internal to ‘threads/thread.c’ and called only by the three 
+//public thread functions that need to switch threads 
+// : thread_block(), thread_exit(), and thread_yield().
+//이라서 이 3개에 있는 push를 고쳐준다.
+
+
 void
 thread_yield (void) 
 {
@@ -303,18 +331,42 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (curr != idle_thread) 
-    list_push_back (&ready_list, &curr->elem);
+  if (curr != idle_thread)
+    list_insert_ordered(&ready_list, &curr->elem, &compare_priority_func, NULL);
+
   curr->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
 }
 
+
+/*----------check------------*/
+/*------------set priority--------------*/
+
+
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  struct thread * cur = thread_current();
+  enum intr_level old_level;
+
+  old_level = intr_disable ();
+  
+  if (new_priority < cur->priority) {
+    if (cur->init_priority != -1) {    // donate 가 된 상황
+      cur->init_priority = new_priority;
+    }
+    else {
+      cur->priority = new_priority;
+      thread_yield();
+    }
+  }
+
+  else
+    thread_current()->priority = new_priority;
+
+  intr_set_level (old_level);
 }
 
 /* Returns the current thread's priority. */
@@ -440,6 +492,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  t->init_priority = -1;
+
+  /*-----check-----*/
+  list_init(&t->holding_locks); // list initialization
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -460,6 +516,8 @@ alloc_frame (struct thread *t, size_t size)
    empty.  (If the running thread can continue running, then it
    will be in the run queue.)  If the run queue is empty, return
    idle_thread. */
+
+/* ------ next thread to run ------*/
 static struct thread *
 next_thread_to_run (void) 
 {
@@ -522,6 +580,19 @@ schedule_tail (struct thread *prev)
    
    It's not safe to call printf() until schedule_tail() has
    completed. */
+
+
+
+
+//check------------------------------------
+//--------------------schedule--------
+//----------------------------------
+
+
+//schedule에서 next_thread_to_run을 그다음으로 돌아갈 스레드를 가르킨다.
+//그리고 prev=seitch_threads(cur,next)이부분에서 next thread로 현재 쓰레드를 바꾼다.
+//여기서 고친건없다.
+
 static void
 schedule (void) 
 {
@@ -551,6 +622,31 @@ allocate_tid (void)
 
   return tid;
 }
+
+
+/* ----------user defined functions---------- */
+/* ------------------------------------------ */
+bool 
+tick_less_func(struct list_elem *a, struct list_elem *b, void *aux UNUSED)
+{
+  struct thread *c = list_entry(a, struct thread, elem);
+  struct thread *d = list_entry(b, struct thread, elem);
+  return c->tick_wake < d->tick_wake;
+}
+
+bool 
+compare_priority_func(struct list_elem *a, struct list_elem *b, void *aux UNUSED)
+{
+  struct thread *c = list_entry(a, struct thread, elem);
+  struct thread *d = list_entry(b, struct thread, elem);
+  return c->priority > d->priority;
+}
+
+/* ------------------------------------------ */
+
+
+
+
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */

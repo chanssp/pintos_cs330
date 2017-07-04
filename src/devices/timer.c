@@ -29,12 +29,22 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 
+
+/* ----------user defined macro---------- */
+/* -------------------------------------- */
+
+static struct list sleep_list;  // 자고있는 thread 들이 모여있는 list
+
+/* -------------------------------------- */
+
+
 /* Sets up the 8254 Programmable Interval Timer (PIT) to
    interrupt PIT_FREQ times per second, and registers the
    corresponding interrupt. */
 void
 timer_init (void) 
 {
+  list_init (&sleep_list);
   /* 8254 input frequency divided by TIMER_FREQ, rounded to
      nearest. */
   uint16_t count = (1193180 + TIMER_FREQ / 2) / TIMER_FREQ;
@@ -92,15 +102,26 @@ timer_elapsed (int64_t then)
   return timer_ticks () - then;
 }
 
+/* ------------------------------ */
+/* ------------check1------------ */
+/* ------------------------------ */
+
 /* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+  if(ticks<0) return;
+  int64_t start = timer_ticks ();   // 현재 시간을 가져옴움
+  struct thread *cur = thread_current();  // 현재 thread
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  enum intr_level old_level = intr_disable();  // interrupt 를 막아줌으로 이 함수가 control을 가짐
+
+  cur->tick_wake = start + ticks;   // 이 thread 가 일어나야 할 시간을 저장
+  list_insert_ordered(&sleep_list, &cur->elem, &tick_less_func, NULL);
+  thread_block();   // 현재 thread 를 재움
+
+  intr_set_level (old_level);  // 다시 interrupt 를 깨움
+
 }
 
 /* Suspends execution for approximately MS milliseconds. */
@@ -131,11 +152,28 @@ timer_print_stats (void)
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
 
+
+/* ------------------------------ */
+/* ------------check2------------ */
+/* ------------------------------ */
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  struct thread* first;    // sleep_list 의 가장 위에있는 thread
+  
   ticks++;
+
+  while(!list_empty(&sleep_list)) {
+    first = list_entry(list_begin(&sleep_list), struct thread, elem);
+    if (first->tick_wake <= ticks) {  // 만약 sleep_list 의 맨앞에있는 thread 가 깨어날 시간이라면..
+      list_pop_front(&sleep_list);     // 그 thread 를 꺼내고 블락을 풀어준다
+      thread_unblock(first);
+    }
+    else break;
+  }
+
   thread_tick ();
 }
 
